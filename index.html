@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S2 Virtual Science Lab</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f9ff;
+            user-select: none;
+        }
+        .lab-bench {
+            background: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        /* Bilingual: zh-text */
+        .zh-text { display: none !important; font-size: 0.85em; color: #64748b; font-weight: normal; margin-left: 4px; }
+        body.show-zh .zh-text            { display: inline !important; }
+        body.show-zh .zh-text.block      { display: block  !important; margin-left: 0; }
+        /* Range Slider */
+        input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%;
+            background: #3b82f6; cursor: pointer; margin-top: -8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; cursor: pointer; background: #cbd5e1; border-radius: 4px; }
+        .digital-readout { font-family: 'Courier New', Courier, monospace; background: #1e293b; color: #4ade80; text-shadow: 0 0 5px rgba(74,222,128,0.5); }
+        .tab-btn { transition: all 0.2s ease; border-bottom: 3px solid transparent; }
+        .tab-btn.active { border-bottom-color: #3b82f6; color: #1d4ed8; background-color: #eff6ff; }
+        .bridge-truss { stroke: #64748b; stroke-width: 2; }
+        .bridge-deck  { stroke: #475569; stroke-width: 4; }
+        .status-badge { transition: all 0.3s ease; }
+    </style>
+</head>
+
+<body class="h-screen flex flex-col p-4 md:p-8 overflow-hidden">
+
+    <!-- ═══  HEADER  ═══ -->
+    <header class="mb-4 flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200 gap-4">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-100 p-2 rounded-lg text-blue-600"><i class="fas fa-rocket text-xl"></i></div>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">S2 Virtual Science Lab <span class="zh-text text-lg">中二虛擬科學實驗室</span></h1>
+                <p class="text-xs text-slate-500">Form 2 Science: Gravity &amp; Motion</p>
+            </div>
+        </div>
+        <!-- Tabs -->
+        <div class="flex space-x-1 bg-slate-100 p-1 rounded-lg overflow-x-auto">
+            <button onclick="switchTab('lab')"      id="tab-lab"      class="tab-btn active px-4 py-2 rounded-md text-sm font-semibold text-slate-600 hover:text-blue-600 whitespace-nowrap"><i class="fas fa-flask mr-1"></i>Experiment <span class="zh-text">實驗</span></button>
+            <button onclick="switchTab('graph')"    id="tab-graph"    class="tab-btn px-4 py-2 rounded-md text-sm font-semibold text-slate-600 hover:text-blue-600 whitespace-nowrap"><i class="fas fa-chart-line mr-1"></i>Graph <span class="zh-text">圖表</span></button>
+            <button onclick="switchTab('bridge')"   id="tab-bridge"   class="tab-btn px-4 py-2 rounded-md text-sm font-semibold text-slate-600 hover:text-blue-600 whitespace-nowrap"><i class="fas fa-bridge mr-1"></i>Mars Challenge <span class="zh-text">火星挑戰</span></button>
+        </div>
+        <!-- Actions -->
+        <div class="flex items-center gap-2">
+            <button onclick="toggleLanguage()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded-lg text-sm font-bold border border-indigo-200 transition"><i class="fas fa-language mr-1"></i> 中/Eng</button>
+            <button onclick="window.location.reload()" class="bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 px-3 py-2 rounded-lg transition border border-slate-200"><i class="fas fa-sync-alt"></i></button>
+        </div>
+    </header>
+
+    <!-- ═══  MAIN  ═══ -->
+    <main class="flex-1 relative overflow-hidden">
+
+        <!-- ══ TAB 1: EXPERIMENT LAB ══ -->
+        <div id="view-lab" class="h-full hidden flex-col lg:flex-row gap-6 pb-2">
+            <div class="lg:w-1/2 flex flex-col gap-4 overflow-y-auto">
+                <!-- Lab Bench -->
+                <div class="lab-bench h-96 border-2 border-slate-200 relative flex justify-center bg-gradient-to-b from-slate-50 to-slate-100 shrink-0">
+                    <div class="absolute inset-0" style="background-image:linear-gradient(#e2e8f0 1px,transparent 1px),linear-gradient(90deg,#e2e8f0 1px,transparent 1px);background-size:20px 20px;opacity:0.5;"></div>
+                    <svg width="300" height="380" class="z-10 mt-2">
+                        <rect x="20" y="10" width="260" height="20" fill="#64748b" rx="4"/>
+                        <rect x="145" y="10" width="10" height="40" fill="#94a3b8"/>
+                        <g id="spring-assembly" transform="translate(150,50)">
+                            <rect x="-20" y="0" width="40" height="60" fill="#cbd5e1" stroke="#475569" stroke-width="2" rx="4"/>
+                            <circle cx="0" cy="30" r="15" fill="#fff" stroke="#94a3b8"/>
+                            <line x1="0" y1="30" x2="0" y2="15" stroke="#ef4444" stroke-width="2" transform="rotate(0,0,30)" id="dial-hand"/>
+                            <circle cx="0" cy="30" r="2" fill="#ef4444"/>
+                            <g id="spring-group">
+                                <line x1="0" y1="60" x2="0" y2="70" stroke="#475569" stroke-width="3"/>
+                                <path id="spring-wire" d="M0,70 L-10,75 L10,85 L0,95" fill="none" stroke="#334155" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                <g id="mass-object" transform="translate(0,150)">
+                                    <line x1="0" y1="-20" x2="0" y2="0" stroke="#475569" stroke-width="3"/>
+                                    <rect x="-25" y="0" width="50" height="50" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2" rx="4" id="mass-rect"/>
+                                    <text x="0" y="30" text-anchor="middle" fill="white" font-weight="bold" font-size="14" id="mass-label">100g</text>
+                                </g>
+                            </g>
+                        </g>
+                    </svg>
+                    <div id="planet-badge" class="absolute top-4 right-4 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold border border-blue-200"><i class="fas fa-globe-americas mr-1"></i> Earth</div>
+                </div>
+                <!-- Controls -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 shrink-0">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-2">1. Select Location <span class="zh-text">選擇地點</span></label>
+                            <select id="planet-selector" onchange="updateSimulation()" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <option value="9.8" selected>Earth (g = 9.8)</option>
+                                <option value="1.6">Moon (g = 1.6)</option>
+                                <option value="3.7">Mars (g = 3.7)</option>
+                                <option value="24.8">Jupiter (g = 24.8)</option>
+                                <option value="mystery">Planet X (Mystery g)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-2">2. Adjust Mass <span class="zh-text">調整質量</span>: <span id="mass-display-val" class="text-blue-600 font-bold">100 g</span></label>
+                            <input type="range" id="mass-slider" min="100" max="1000" step="100" value="100" oninput="updateSimulation()">
+                            <div class="flex justify-between text-xs text-slate-400 mt-1"><span>100g</span><span>1kg</span></div>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex flex-col md:flex-row items-center gap-4 bg-slate-100 p-4 rounded-lg">
+                        <div class="flex-1 w-full text-center md:text-left">
+                            <span class="text-sm font-bold text-slate-500 mr-2">READING <span class="zh-text">讀數</span>:</span>
+                            <div class="digital-readout inline-block px-4 py-2 rounded text-xl tracking-wider shadow-inner border border-slate-600">W = <span id="weight-readout">0.00</span> N</div>
+                        </div>
+                        <button onclick="recordData()" class="w-full md:w-auto bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow transition transform active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fas fa-pencil-alt"></i> Record Data <span class="zh-text">記錄數據</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- Right: Data Table -->
+            <div class="lg:w-1/2 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden h-full">
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-lg p-4 border-l-4 border-purple-500 m-4 mb-2">
+                    <h3 class="text-lg font-bold text-purple-800 mb-3 flex items-center"><i class="fas fa-lightbulb mr-2"></i>Discovery Questions <span class="zh-text">探索問題</span></h3>
+                    <div class="space-y-2 text-sm text-gray-700">
+                        <p class="flex items-start"><span class="text-purple-600 font-bold mr-2">1.</span><span>What happens to the weight when you double the mass? <span class="zh-text">當質量加倍時，重量會發生什麼變化？</span></span></p>
+                        <p class="flex items-start"><span class="text-purple-600 font-bold mr-2">2.</span><span>Can you find a mathematical relationship between mass and weight? <span class="zh-text">你能找到質量和重量之間的數學關係嗎？</span></span></p>
+                        <p class="flex items-start"><span class="text-purple-600 font-bold mr-2">3.</span><span>How many newtons of weight does each kilogram of mass produce? <span class="zh-text">每公斤質量產生多少牛頓的重量？</span></span></p>
+                    </div>
+                </div>
+                <div class="p-4 pt-2 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
+                    <h2 class="font-bold text-lg text-slate-700">Data Log <span class="zh-text">數據記錄</span></h2>
+                    <button id="clear-btn" onclick="clearTable()" class="text-red-500 hover:text-red-700 text-sm font-semibold transition"><i class="fas fa-trash-alt mr-1"></i> Clear <span class="zh-text">清除</span></button>
+                </div>
+                <div class="overflow-y-auto flex-1 p-0">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-100 text-slate-600 text-sm uppercase sticky top-0 z-10">
+                            <tr>
+                                <th class="p-3 border-b">Location <br><span class="zh-text">地點</span></th>
+                                <th class="p-3 border-b">Mass <span class="zh-text">質量</span><br><span class="text-xs text-slate-400">(kg)</span></th>
+                                <th class="p-3 border-b text-blue-700">Weight <span class="zh-text">重量</span><br><span class="text-xs text-blue-400">(N)</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-table-body" class="text-slate-700"></tbody>
+                    </table>
+                    <div id="empty-state" class="flex flex-col items-center justify-center h-48 text-slate-400">
+                        <i class="fas fa-clipboard-list text-4xl mb-2"></i>
+                        <p>No data recorded <span class="zh-text">未有數據</span></p>
+                    </div>
+                </div>
+                <div id="analysis-assistant" class="p-4 border-t border-slate-200 bg-yellow-50 text-sm text-yellow-900 shrink-0 transition-colors duration-500">
+                    <div class="flex items-start gap-3">
+                        <div class="text-xl text-yellow-600 mt-0.5"><i id="analysis-icon" class="fas fa-lightbulb"></i></div>
+                        <div>
+                            <h4 class="font-bold text-yellow-800 mb-1"><span id="analysis-title-en">Start Your Investigation</span><span id="analysis-title-zh" class="zh-text block text-yellow-700">開始你的探究</span></h4>
+                            <p><span id="analysis-text-en">Select a location and record at least <strong>3 different masses</strong> to see a pattern.</span><span id="analysis-text-zh" class="zh-text block mt-1 text-yellow-800">選擇一個地點並記錄至少 <strong>3 個不同的質量</strong> 來觀察規律。</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ TAB 2: GRAPH ══ -->
+        <!-- Password lock overlay for Graph tab -->
+        <div id="graph-lock" class="h-full hidden flex-col items-center justify-center gap-6">
+            <div class="bg-white rounded-2xl shadow-xl p-10 flex flex-col items-center gap-5 max-w-sm w-full">
+                <div class="bg-yellow-100 rounded-full p-5">
+                    <i class="fas fa-lock text-5xl text-yellow-500"></i>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800 text-center">Teacher Access Only<span class="zh-text block text-base font-semibold text-gray-500 mt-1">僅供老師查閱</span></h2>
+                <p class="text-sm text-gray-500 text-center">Enter the teacher password to view the graph.<span class="zh-text block mt-1">請輸入教師密碼以查看圖表。</span></p>
+                <input id="graph-password-input" type="password" placeholder="Enter password" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" onkeydown="if(event.key==='Enter')unlockGraph()" />
+                <p id="graph-password-error" class="text-red-500 text-xs hidden">Incorrect password. Please try again. <span class="zh-text">密碼錯誤，請再試一次。</span></p>
+                <button onclick="unlockGraph()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition">
+                    <i class="fas fa-unlock-alt mr-2"></i>Unlock <span class="zh-text">解鎖</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="view-graph" class="h-full hidden flex-col gap-4 overflow-y-auto pb-6">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center"><i class="fas fa-chart-line mr-3 text-blue-600"></i>Mass vs Weight Graph <span class="zh-text">質量與重量關係圖</span></h2>
+                <div class="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded"><p class="text-gray-700">This graph shows how weight changes with mass on different planets. <span class="zh-text block mt-1">此圖表顯示了不同行星上重量如何隨質量變化。</span></p></div>
+                <div class="bg-gray-50 rounded-lg p-4 max-w-3xl mx-auto w-full"><canvas id="graphCanvas" width="600" height="360" class="w-full"></canvas></div>
+                <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="flex items-center"><div class="w-4 h-4 bg-green-500 rounded mr-2"></div><span class="text-sm">Earth (g = 9.8)</span></div>
+                    <div class="flex items-center"><div class="w-4 h-4 bg-gray-400 rounded mr-2"></div><span class="text-sm">Moon (g = 1.6)</span></div>
+                    <div class="flex items-center"><div class="w-4 h-4 bg-red-500 rounded mr-2"></div><span class="text-sm">Mars (g = 3.7)</span></div>
+                    <div class="flex items-center"><div class="w-4 h-4 bg-orange-500 rounded mr-2"></div><span class="text-sm">Jupiter (g = 24.8)</span></div>
+                </div>
+                <div class="mt-6 bg-purple-50 border-l-4 border-purple-500 p-4 rounded">
+                    <h4 class="font-bold text-purple-800 mb-2">Questions to Consider: <span class="zh-text">思考問題：</span></h4>
+                    <ul class="space-y-2 text-gray-700 list-disc list-inside text-sm">
+                        <li>What do you notice about all the lines? <span class="zh-text">你注意到所有線條有什麼共同點？</span></li>
+                        <li>How does the steepness (slope) relate to gravity? <span class="zh-text">斜率與重力有什麼關係？</span></li>
+                        <li>Can you write an equation? <span class="zh-text">你能寫出方程式嗎？</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ TAB 3: BRIDGE ══ -->
+        <div id="view-bridge" class="h-full hidden flex-col gap-4 overflow-y-auto pb-6">
+            <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl flex items-start gap-4 shrink-0">
+                <div class="bg-indigo-600 text-white p-3 rounded-lg text-2xl shrink-0"><i class="fas fa-drafting-compass"></i></div>
+                <div>
+                    <h2 class="text-lg font-bold text-indigo-900">Mission: Mars Colony Bridge <span class="zh-text block text-sm font-normal text-indigo-700">任務：火星殖民地橋樑</span></h2>
+                    <p class="text-indigo-800 text-sm mt-1">Bridge Limit: <span class="font-bold bg-white px-2 py-0.5 rounded border border-indigo-200">20,000 N</span></p>
+                    <p class="text-indigo-600 text-xs mt-2 italic"><strong>Challenge:</strong> Find the <span class="underline">maximum mass</span> safe on <strong>BOTH</strong> Earth and Mars. <span class="zh-text block mt-1 not-italic"><strong>挑戰：</strong>找出在地球和火星上都安全的最大質量。</span></p>
+                </div>
+            </div>
+            <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 shrink-0">
+                <h3 class="font-bold text-indigo-900 text-sm mb-3 uppercase tracking-wide"><i class="fas fa-clipboard-list mr-2"></i>Pre-Mission Analysis <span class="zh-text">任務前分析</span></h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-3 rounded-lg border border-blue-100 shadow-sm"><div class="text-xs font-bold text-slate-400 mb-1">STEP 1: LIMITS</div><p class="text-sm text-slate-700">What is the max Weight the bridge can hold? <span class="zh-text text-xs text-slate-500 block">橋樑能承受的最大重量是多少？</span></p></div>
+                    <div class="bg-white p-3 rounded-lg border border-blue-100 shadow-sm"><div class="text-xs font-bold text-slate-400 mb-1">STEP 2: GRAVITY</div><p class="text-sm text-slate-700">Which planet pulls harder? <span class="zh-text text-xs text-slate-500 block">哪個星球的引力較大？</span></p></div>
+                    <div class="bg-white p-3 rounded-lg border border-blue-100 shadow-sm"><div class="text-xs font-bold text-slate-400 mb-1">STEP 3: SAFETY</div><p class="text-sm text-slate-700">If safe on Earth, is it safe on Mars? <span class="zh-text text-xs text-slate-500 block">如果在地球安全，火星是否也安全？</span></p></div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 shrink-0">
+                <label class="block text-sm font-semibold text-slate-600 mb-2">Truck Mass <span class="zh-text">貨車質量</span></label>
+                <div class="flex items-center gap-4">
+                    <input type="range" id="truck-slider" min="1000" max="3000" step="10" value="1500" oninput="updateBridge()" class="flex-1">
+                    <span id="truck-mass-val" class="text-2xl font-bold text-slate-800 w-24 text-right">1500 kg</span>
+                </div>
+                <div class="flex justify-between text-xs text-slate-400 mt-1 px-1"><span>1000 kg</span><span>3000 kg</span></div>
+            </div>
+            <div class="flex flex-col md:flex-row gap-4 h-full min-h-[400px]">
+                <div class="flex-1 bg-white border-2 border-slate-200 rounded-xl overflow-hidden flex flex-col">
+                    <div class="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-center"><span class="font-bold text-slate-700"><i class="fas fa-globe-americas text-blue-500 mr-2"></i>Earth <span class="zh-text">地球</span></span><span class="text-xs text-slate-400">g = 9.8 N/kg</span></div>
+                    <div class="flex-1 bg-sky-50 flex flex-col items-center justify-center p-4">
+                        <svg id="earth-bridge-svg" viewBox="0 0 300 200" class="w-full max-w-[300px] h-auto">
+                            <g id="earth-bridge-g"><rect x="20" y="150" width="20" height="50" fill="#64748b"/><rect x="260" y="150" width="20" height="50" fill="#64748b"/><line x1="10" y1="150" x2="290" y2="150" class="bridge-deck"/><path d="M30,150 L80,120 L130,150 L180,120 L230,150 L280,120" fill="none" class="bridge-truss"/></g>
+                            <g id="earth-truck" transform="translate(130,135)"><rect x="-20" y="0" width="40" height="15" fill="#ef4444" rx="2"/><rect x="20" y="5" width="10" height="10" fill="#3b82f6" rx="1"/><circle cx="-10" cy="15" r="4" fill="#333"/><circle cx="15" cy="15" r="4" fill="#333"/><line x1="0" y1="20" x2="0" y2="60" stroke="#ef4444" stroke-width="3" marker-end="url(#ah)" id="earth-arrow"/><text x="10" y="50" fill="#ef4444" font-size="12" font-weight="bold" id="earth-force-text">14700 N</text></g>
+                            <defs><marker id="ah" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#ef4444"/></marker></defs>
+                        </svg>
+                        <div id="earth-status" class="status-badge mt-4 px-4 py-2 rounded-full font-bold text-white bg-green-500 text-sm shadow-md">SAFE</div>
+                    </div>
+                </div>
+                <div class="flex-1 bg-white border-2 border-slate-200 rounded-xl overflow-hidden flex flex-col">
+                    <div class="bg-orange-50 p-3 border-b border-orange-100 flex justify-between items-center"><span class="font-bold text-slate-700"><i class="fas fa-globe text-orange-500 mr-2"></i>Mars <span class="zh-text">火星</span></span><span class="text-xs text-slate-400">g = 3.7 N/kg</span></div>
+                    <div class="flex-1 bg-orange-50/30 flex flex-col items-center justify-center p-4">
+                        <svg id="mars-bridge-svg" viewBox="0 0 300 200" class="w-full max-w-[300px] h-auto">
+                            <g id="mars-bridge-g"><rect x="20" y="150" width="20" height="50" fill="#64748b"/><rect x="260" y="150" width="20" height="50" fill="#64748b"/><line x1="10" y1="150" x2="290" y2="150" class="bridge-deck"/><path d="M30,150 L80,120 L130,150 L180,120 L230,150 L280,120" fill="none" class="bridge-truss"/></g>
+                            <g id="mars-truck" transform="translate(130,135)"><rect x="-20" y="0" width="40" height="15" fill="#ef4444" rx="2"/><rect x="20" y="5" width="10" height="10" fill="#3b82f6" rx="1"/><circle cx="-10" cy="15" r="4" fill="#333"/><circle cx="15" cy="15" r="4" fill="#333"/><line x1="0" y1="20" x2="0" y2="60" stroke="#ef4444" stroke-width="3" marker-end="url(#ah)" id="mars-arrow"/><text x="10" y="50" fill="#ef4444" font-size="12" font-weight="bold" id="mars-force-text">5550 N</text></g>
+                        </svg>
+                        <div id="mars-status" class="status-badge mt-4 px-4 py-2 rounded-full font-bold text-white bg-green-500 text-sm shadow-md">SAFE</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-indigo-50 border border-indigo-100 p-6 rounded-xl mt-4 shrink-0 shadow-sm">
+                <div class="flex items-center gap-3 mb-4"><div class="bg-indigo-600 text-white rounded-lg p-2"><i class="fas fa-file-signature"></i></div><h3 class="font-bold text-indigo-900">Final Mission Report <span class="zh-text text-sm font-normal">最終任務報告</span></h3></div>
+                <div class="flex flex-col md:flex-row gap-4 items-end">
+                    <div class="w-full flex-1">
+                        <label class="block text-sm font-semibold text-slate-600 mb-1">Calculated Max Mass (kg): <span class="zh-text">計算出的最大質量 (kg):</span></label>
+                        <div class="flex gap-2">
+                            <input type="number" id="student-answer" placeholder="e.g. 2000" class="p-3 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <button onclick="checkAnswer()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2 rounded-lg transition shrink-0">Check <span class="zh-text">檢查</span></button>
+                        </div>
+                    </div>
+                </div>
+                <div id="answer-feedback" class="mt-3"></div>
+                <div id="solution-steps" class="hidden mt-4 pt-4 border-t border-indigo-200">
+                    <h4 class="font-bold text-indigo-800 mb-2"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Thinking Process <span class="zh-text">思考過程</span></h4>
+                    <div class="bg-white p-4 rounded-lg border border-indigo-100 text-sm text-slate-700 space-y-2">
+                        <p><strong>1.</strong> Max Force = 20,000 N.</p>
+                        <p><strong>2.</strong> Earth pulls harder (g=9.8) than Mars (g=3.7). <span class="zh-text text-xs text-slate-500">地球引力比火星大。</span></p>
+                        <p><strong>3.</strong> <span class="font-mono bg-slate-100 px-2 py-1 rounded">20,000 = m × 9.8</span></p>
+                        <p class="font-bold text-indigo-600 text-lg">m = 20,000 ÷ 9.8 ≈ 2040.8 kg</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ═══  SCRIPTS  ═══ -->
+    <script>
+        // ── SHARED STATE ──
+        let currentTab = 'lab';
+        let currentMass = 0.1;
+        let currentG = 9.8;
+        let planetName = "Earth";
+        let planetNameZh = "地球";
+        let mysteryG = 0;
+        let clearConfirmTimer = null;
+        let recordedPoints = [];
+        let isBilingual = false;
+        const planetsZh = {"Earth":"地球","Moon":"月球","Mars":"火星","Jupiter":"木星","Planet X":"X 星球"};
+
+        window.onload = function() {
+            mysteryG = (Math.random() * (20 - 5) + 5).toFixed(1);
+            updateSimulation();
+            updateBridge();
+            drawGraph();
+            switchTab('lab');
+        };
+
+        // ── LANGUAGE ──
+        function toggleLanguage() {
+            isBilingual = !isBilingual;
+            document.body.classList.toggle('show-zh', isBilingual);
+        }
+
+        // ── TABS ──
+        const GRAPH_PASSWORD = 'teacher123';
+        let graphUnlocked = false;
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+            // If graph tab is selected and not yet unlocked, show lock overlay instead
+            const showLock = (tabId === 'graph' && !graphUnlocked);
+            ['lab','graph','bridge'].forEach(v => {
+                const el = document.getElementById('view-' + v);
+                el.classList.toggle('hidden', v !== tabId);
+                el.classList.toggle('flex',   v === tabId && !showLock);
+                document.getElementById('tab-' + v).className =
+                    (v === tabId
+                        ? "tab-btn active px-4 py-2 rounded-md text-sm font-semibold text-slate-600 hover:text-blue-600 whitespace-nowrap cursor-default"
+                        : "tab-btn px-4 py-2 rounded-md text-sm font-semibold text-slate-600 hover:text-blue-600 whitespace-nowrap");
+            });
+            const lockEl = document.getElementById('graph-lock');
+            if (showLock) {
+                // Hide graph content, show lock overlay
+                document.getElementById('view-graph').classList.add('hidden');
+                document.getElementById('view-graph').classList.remove('flex');
+                lockEl.classList.remove('hidden');
+                lockEl.classList.add('flex');
+                document.getElementById('graph-password-input').value = '';
+                document.getElementById('graph-password-error').classList.add('hidden');
+                setTimeout(() => document.getElementById('graph-password-input').focus(), 50);
+            } else {
+                lockEl.classList.add('hidden');
+                lockEl.classList.remove('flex');
+            }
+            if (tabId === 'graph' && graphUnlocked) drawGraph();
+        }
+
+        function unlockGraph() {
+            const input = document.getElementById('graph-password-input').value;
+            if (input === GRAPH_PASSWORD) {
+                graphUnlocked = true;
+                document.getElementById('graph-lock').classList.add('hidden');
+                document.getElementById('graph-lock').classList.remove('flex');
+                document.getElementById('view-graph').classList.remove('hidden');
+                document.getElementById('view-graph').classList.add('flex');
+                drawGraph();
+            } else {
+                document.getElementById('graph-password-error').classList.remove('hidden');
+                document.getElementById('graph-password-input').value = '';
+                document.getElementById('graph-password-input').focus();
+            }
+        }
+
+        // ══ GRAVITY LAB ══
+        function updateSimulation() {
+            const massInput = document.getElementById('mass-slider').value;
+            const ps = document.getElementById('planet-selector');
+            currentMass = massInput / 1000;
+            if (ps.value === 'mystery') { currentG = parseFloat(mysteryG); planetName = "Planet X"; }
+            else { currentG = parseFloat(ps.value); planetName = ps.options[ps.selectedIndex].text.split(' (')[0]; }
+            planetNameZh = planetsZh[planetName] || planetName;
+            const weight = currentMass * currentG;
+            document.getElementById('mass-display-val').textContent = massInput + ' g';
+            document.getElementById('mass-label').textContent        = massInput + 'g';
+            document.getElementById('weight-readout').textContent    = weight.toFixed(2);
+            const badge = document.getElementById('planet-badge');
+            badge.innerHTML = `<i class="fas fa-globe mr-1"></i> ${planetName} <span class="zh-text">${planetNameZh}</span>`;
+            let cc = "bg-blue-100 text-blue-800 border-blue-200";
+            if(planetName==='Mars')     cc="bg-red-100 text-red-800 border-red-200";
+            else if(planetName==='Moon')     cc="bg-gray-200 text-gray-800 border-gray-300";
+            else if(planetName==='Jupiter')  cc="bg-orange-100 text-orange-800 border-orange-200";
+            else if(planetName==='Planet X') cc="bg-purple-100 text-purple-800 border-purple-200";
+            badge.className = `absolute top-4 right-4 px-3 py-1 rounded-full text-sm font-bold border ${cc}`;
+            // Spring
+            const maxForce=25, stretchPct=Math.min(weight/maxForce,1.2), ext=stretchPct*100;
+            const startY=70, baseLen=80, totalLen=baseLen+ext, endY=startY+totalLen;
+            const seg=10, sh=totalLen/seg; let d=`M0,${startY}`;
+            for(let i=1;i<=seg;i++){const zx=(i%2===1)?-10:10; d+= i===seg?` L0,${endY}`:`  L${zx},${startY+(i*sh)}`;}
+            document.getElementById('spring-wire').setAttribute('d',d);
+            document.getElementById('mass-object').setAttribute('transform',`translate(0,${endY+20})`);
+            document.getElementById('dial-hand').setAttribute('transform',`rotate(${Math.min((weight/25)*180,180)},0,30)`);
+        }
+
+        function recordData() {
+            document.getElementById('empty-state').style.display = 'none';
+            const w = currentMass * currentG;
+            recordedPoints.push({planet:planetName, mass:currentMass, weight:w, g:currentG});
+            const row = document.createElement('tr');
+            row.className="border-b hover:bg-slate-50 transition";
+            row.innerHTML=`<td class="p-3 font-medium">${planetName}<br><span class="zh-text text-xs text-slate-500">${planetNameZh}</span></td><td class="p-3">${currentMass.toFixed(1)}</td><td class="p-3 font-bold text-blue-600">${w.toFixed(2)}</td>`;
+            document.getElementById('data-table-body').insertBefore(row, document.getElementById('data-table-body').firstChild);
+            updateAnalysis(); drawGraph();
+        }
+
+        function updateAnalysis() {
+            const ab=document.getElementById('analysis-assistant'), ic=document.getElementById('analysis-icon');
+            const ten=document.getElementById('analysis-title-en'), tzh=document.getElementById('analysis-title-zh');
+            const wen=document.getElementById('analysis-text-en'),  wzh=document.getElementById('analysis-text-zh');
+            if(!recordedPoints.length) return;
+            const up=[...new Set(recordedPoints.map(p=>p.planet))];
+            if(up.length===1){
+                const pn=up[0],pz=planetsZh[pn]||pn,cnt=recordedPoints.length;
+                if(cnt<3){wen.innerHTML=`Good start! Record <strong>${3-cnt} more</strong> for ${pn}.`;wzh.innerHTML=`好的開始！為 ${pz} 再記錄 <strong>${3-cnt} 組</strong>。`;}
+                else{ab.className="p-4 border-t border-slate-200 bg-green-50 text-sm text-green-900 shrink-0 transition-colors duration-500";ic.className="fas fa-check-circle";ten.textContent="Pattern Detected!";tzh.textContent="發現規律！";wen.innerHTML="Look at your data - try calculating weight ÷ mass for each row.";wzh.innerHTML="試著計算每行的重量÷質量。";}
+            }else{
+                ab.className="p-4 border-t border-slate-200 bg-blue-50 text-sm text-blue-900 shrink-0 transition-colors duration-500";ic.className="fas fa-balance-scale";
+                ten.textContent="Comparison Time";tzh.textContent="比較時間";
+                wen.innerHTML=`Data for ${up.length} locations! Check the <strong>Graph</strong> tab.`;wzh.innerHTML=`已記錄 ${up.length} 個地點的數據！查看<strong>圖表</strong>標籤。`;
+            }
+        }
+
+        function clearTable() {
+            const btn=document.getElementById('clear-btn');
+            if(btn.getAttribute('data-confirm')==='true'){
+                document.getElementById('data-table-body').innerHTML="";
+                document.getElementById('empty-state').style.display='flex';
+                recordedPoints=[]; resetClearButton();
+                document.getElementById('analysis-assistant').className="p-4 border-t border-slate-200 bg-yellow-50 text-sm text-yellow-900 shrink-0 transition-colors duration-500";
+                document.getElementById('analysis-icon').className="fas fa-lightbulb";
+                document.getElementById('analysis-title-en').textContent="Start Your Investigation";
+                document.getElementById('analysis-title-zh').textContent="開始你的探究";
+                document.getElementById('analysis-text-en').innerHTML="Select a location and record at least <strong>3 different masses</strong> to see a pattern.";
+                document.getElementById('analysis-text-zh').innerHTML="選擇一個地點並記錄至少 <strong>3 個不同的質量</strong>。";
+            }else{
+                btn.setAttribute('data-confirm','true');
+                btn.innerHTML='<i class="fas fa-exclamation-circle mr-1"></i> Confirm? <span class="zh-text">確認?</span>';
+                btn.className="text-orange-600 hover:text-orange-800 text-sm font-bold transition";
+                if(clearConfirmTimer) clearTimeout(clearConfirmTimer);
+                clearConfirmTimer=setTimeout(resetClearButton,3000);
+            }
+        }
+        function resetClearButton(){
+            const btn=document.getElementById('clear-btn'); if(!btn) return;
+            btn.setAttribute('data-confirm','false');
+            btn.innerHTML='<i class="fas fa-trash-alt mr-1"></i> Clear <span class="zh-text">清除</span>';
+            btn.className="text-red-500 hover:text-red-700 text-sm font-semibold transition"; clearConfirmTimer=null;
+        }
+
+        function updateBridge() {
+            const m=parseInt(document.getElementById('truck-slider').value);
+            document.getElementById('truck-mass-val').textContent=m+" kg";
+            const maxLoad=20000, ew=m*9.8, mw=m*3.7;
+            document.getElementById('earth-force-text').textContent=Math.round(ew)+" N";
+            document.getElementById('mars-force-text').textContent=Math.round(mw)+" N";
+            const upd=(weight,arrowId,statusId,bridgeId)=>{
+                const safe=weight<=maxLoad, al=Math.min((weight/25000)*80,100);
+                document.getElementById(arrowId).setAttribute("y2",20+al);
+                const se=document.getElementById(statusId), be=document.getElementById(bridgeId);
+                if(safe){se.textContent="SAFE";se.className="status-badge mt-4 px-4 py-2 rounded-full font-bold text-white bg-green-500 text-sm shadow-md";be.querySelector('.bridge-deck').setAttribute("stroke","#475569");be.querySelector('.bridge-truss').setAttribute("stroke","#64748b");}
+                else{se.textContent="FAILURE";se.className="status-badge mt-4 px-4 py-2 rounded-full font-bold text-white bg-red-600 text-sm shadow-md animate-pulse";be.querySelector('.bridge-deck').setAttribute("stroke","#ef4444");be.querySelector('.bridge-truss').setAttribute("stroke","#f87171");}
+            };
+            upd(ew,'earth-arrow','earth-status','earth-bridge-g');
+            upd(mw,'mars-arrow','mars-status','mars-bridge-g');
+        }
+
+        function checkAnswer() {
+            const val=parseFloat(document.getElementById('student-answer').value);
+            const fb=document.getElementById('answer-feedback'), sol=document.getElementById('solution-steps');
+            if(!val&&val!==0){alert("Please enter a number / 請輸入數字");return;}
+            let en,zh,ok=false;
+            if(val>=2040&&val<=2041){en="✅ Amazing! You found the exact limit.";zh="✅ 太棒了！找到了確切的極限。";ok=true;}
+            else if(val>2041){en="⚠️ Too heavy! Limit ~2040 kg.";zh="⚠️ 太重！上限 ~2040 kg。";}
+            else{en="Safe, but you can go heavier! Max ~2040 kg.";zh="安全，但可以更重！上限約 2040 kg。";}
+            fb.innerHTML=`<div class="p-3 rounded-lg ${ok?'bg-green-100 text-green-800':'bg-orange-50 text-orange-800'}"><strong>${en}</strong><span class="zh-text block mt-1">${zh}</span></div>`;
+            sol.classList.remove('hidden');
+            setTimeout(()=>{document.getElementById('view-bridge').scrollTop=document.getElementById('view-bridge').scrollHeight;},100);
+        }
+
+        function drawGraph() {
+            const canvas=document.getElementById('graphCanvas'); if(!canvas) return;
+            const ctx=canvas.getContext('2d'), w=canvas.width, h=canvas.height;
+            ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,w,h);
+            const mg={top:40,right:40,bottom:60,left:70}, pw=w-mg.left-mg.right, ph=h-mg.top-mg.bottom, mM=10, mW=250;
+            ctx.strokeStyle='#333'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(mg.left,mg.top); ctx.lineTo(mg.left,h-mg.bottom); ctx.lineTo(w-mg.right,h-mg.bottom); ctx.stroke();
+            ctx.strokeStyle='#e0e0e0'; ctx.lineWidth=1;
+            for(let i=0;i<=10;i++){const x=mg.left+(i/10)*pw,y=h-mg.bottom-(i/10)*ph;ctx.beginPath();ctx.moveTo(x,h-mg.bottom);ctx.lineTo(x,mg.top);ctx.stroke();ctx.beginPath();ctx.moveTo(mg.left,y);ctx.lineTo(w-mg.right,y);ctx.stroke();}
+            ctx.fillStyle='#333'; ctx.font='bold 14px Arial'; ctx.textAlign='center'; ctx.fillText('Mass (kg)',w/2,h-15);
+            ctx.save(); ctx.translate(20,h/2); ctx.rotate(-Math.PI/2); ctx.fillText('Weight (N)',0,0); ctx.restore();
+            ctx.font='12px Arial'; ctx.textAlign='center';
+            for(let i=0;i<=10;i++){ctx.fillText((i*mM/10).toFixed(0),mg.left+(i/10)*pw,h-mg.bottom+20);}
+            ctx.textAlign='right';
+            for(let i=0;i<=10;i++){ctx.fillText((i*mW/10).toFixed(0),mg.left-10,h-mg.bottom-(i/10)*ph+5);}
+            [{g:9.8,c:'#22c55e'},{g:1.6,c:'#9ca3af'},{g:3.7,c:'#ef4444'},{g:24.8,c:'#f97316'}].forEach(p=>{
+                ctx.strokeStyle=p.c; ctx.lineWidth=3; ctx.beginPath();
+                for(let m=0;m<=mM;m+=0.1){const wt=m*p.g,x=mg.left+(m/mM)*pw,y=h-mg.bottom-(wt/mW)*ph;m===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+                ctx.stroke();
+            });
+            if(recordedPoints.length>0){
+                const pc={'Earth':'#22c55e','Moon':'#9ca3af','Mars':'#ef4444','Jupiter':'#f97316'};
+                recordedPoints.forEach(pt=>{
+                    const x=mg.left+(pt.mass/mM)*pw, y=h-mg.bottom-(pt.weight/mW)*ph;
+                    ctx.fillStyle=pc[pt.planet]||'#3b82f6'; ctx.beginPath(); ctx.arc(x,y,6,0,2*Math.PI); ctx.fill();
+                    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+                });
+            }
+        }
+
+    </script>
+</body>
+</html>
