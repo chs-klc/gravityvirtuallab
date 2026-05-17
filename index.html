@@ -470,11 +470,56 @@
             const fb=document.getElementById('answer-feedback'), sol=document.getElementById('solution-steps');
             if(!val&&val!==0){alert("Please enter a number / 請輸入數字");return;}
             let en,zh,ok=false;
-            if(val>=2040&&val<=2041){en="✅ Amazing! You found the exact limit.";zh="✅ 太棒了！找到了確切的極限。";ok=true;}
-            else if(val>2041){en="⚠️ Too heavy! Limit ~2040 kg.";zh="⚠️ 太重！上限 ~2040 kg。";}
-            else{en="Safe, but you can go heavier! Max ~2040 kg.";zh="安全，但可以更重！上限約 2040 kg。";}
-            fb.innerHTML=`<div class="p-3 rounded-lg ${ok?'bg-green-100 text-green-800':'bg-orange-50 text-orange-800'}"><strong>${en}</strong><span class="zh-text block mt-1">${zh}</span></div>`;
-            sol.classList.remove('hidden');
+            
+            if(val>=2040&&val<=2041){
+                // Exact answer - show full solution
+                en="✅ Amazing! You found the exact limit.";
+                zh="✅ 太棒了！找到了確切的極限。";
+                ok=true;
+                fb.innerHTML=`<div class="p-3 rounded-lg bg-green-100 text-green-800"><strong>${en}</strong><span class="zh-text block mt-1">${zh}</span></div>`;
+                sol.classList.remove('hidden');
+            }
+            else if(val>2041){
+                // Too heavy - provide scaffolding
+                const diff = val - 2041;
+                let hint = "";
+                if(diff > 1000){
+                    en="⚠️ Way too heavy! Think about what happens on Earth first.";
+                    zh="⚠️ 太重了！先想想在地球上會發生什麼。";
+                    hint="<p class='mt-2 text-sm'><strong>💡 Hint:</strong> The bridge can hold 20,000 N on Earth. What mass would create that force? <span class='zh-text'>提示：橋在地球上可以承受 20,000 N。什麼質量會產生這個力？</span></p>";
+                } else if(diff > 100){
+                    en="⚠️ Too heavy! You're getting closer. Try a smaller value.";
+                    zh="⚠️ 太重！越來越接近了。試試更小的值。";
+                    hint="<p class='mt-2 text-sm'><strong>💡 Hint:</strong> Use the formula W = m × g. What mass gives 20,000 N on Earth? <span class='zh-text'>提示：使用公式 W = m × g。什麼質量在地球上產生 20,000 N？</span></p>";
+                } else {
+                    en="⚠️ Slightly too heavy! Very close now!";
+                    zh="⚠️ 稍微太重了！非常接近了！";
+                    hint="<p class='mt-2 text-sm'><strong>💡 Hint:</strong> Round down carefully. Remember: 20,000 ÷ 9.8 = ? <span class='zh-text'>提示：仔細向下取整。記住：20,000 ÷ 9.8 = ?</span></p>";
+                }
+                fb.innerHTML=`<div class="p-3 rounded-lg bg-orange-50 text-orange-800"><strong>${en}</strong><span class="zh-text block mt-1">${zh}</span>${hint}</div>`;
+                sol.classList.add('hidden');
+            }
+            else{
+                // Too light - provide scaffolding
+                const diff = 2040 - val;
+                let hint = "";
+                if(diff > 1000){
+                    en="✅ Safe, but way too cautious!";
+                    zh="✅ 安全，但太保守了！";
+                    hint="<p class='mt-2 text-sm'><strong>💡 Hint:</strong> The bridge won't break until it reaches 20,000 N on Earth. What's the maximum mass before that? <span class='zh-text'>提示：橋在地球上達到 20,000 N 之前不會斷。那之前的最大質量是多少？</span></p>";
+                } else if(diff > 100){
+                    en="✅ Safe, but you can load more! Keep going.";
+                    zh="✅ 安全，但可以裝載更多！繼續。";
+                    hint="<p class='mt-2 text-sm'><strong>💡 Hint:</strong> Calculate: mass = force ÷ gravity. Use Earth's values! <span class='zh-text'>提示：計算：質量 = 力 ÷ 重力。使用地球的數值！</span></p>";
+                } else {
+                    en="✅ Very close! Just a bit more mass.";
+                    zh="✅ 非常接近！再多一點質量。";
+                    hint="<p class='mt-2 text-sm'><strong>💡 Hint:</strong> You're almost there! Try increasing your answer slightly. <span class='zh-text'>提示：快到了！試著稍微增加你的答案。</span></p>";
+                }
+                fb.innerHTML=`<div class="p-3 rounded-lg bg-blue-50 text-blue-800"><strong>${en}</strong><span class="zh-text block mt-1">${zh}</span>${hint}</div>`;
+                sol.classList.add('hidden');
+            }
+            
             setTimeout(()=>{document.getElementById('view-bridge').scrollTop=document.getElementById('view-bridge').scrollHeight;},100);
         }
 
