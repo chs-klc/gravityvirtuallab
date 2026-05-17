@@ -240,7 +240,7 @@
                 <div class="flex-1 bg-white border-2 border-slate-200 rounded-xl overflow-hidden flex flex-col">
                     <div class="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-center"><span class="font-bold text-slate-700"><i class="fas fa-globe-americas text-blue-500 mr-2"></i>Earth <span class="zh-text">地球</span></span><span class="text-xs text-slate-400">g = 9.8 N/kg</span></div>
                     <div class="flex-1 bg-sky-50 flex flex-col items-center justify-center p-4">
-                        <svg id="earth-bridge-svg" viewBox="0 0 300 200" class="w-full max-w-[300px] h-auto">
+                        <svg id="earth-bridge-svg" viewBox="0 0 300 270" class="w-full max-w-[300px] h-auto">
                             <g id="earth-bridge-g"><rect x="20" y="150" width="20" height="50" fill="#64748b"/><rect x="260" y="150" width="20" height="50" fill="#64748b"/><line x1="10" y1="150" x2="290" y2="150" class="bridge-deck"/><path d="M30,150 L80,120 L130,150 L180,120 L230,150 L280,120" fill="none" class="bridge-truss"/></g>
                             <g id="earth-truck" transform="translate(130,135)"><rect x="-20" y="0" width="40" height="15" fill="#ef4444" rx="2"/><rect x="20" y="5" width="10" height="10" fill="#3b82f6" rx="1"/><circle cx="-10" cy="15" r="4" fill="#333"/><circle cx="15" cy="15" r="4" fill="#333"/><line x1="0" y1="20" x2="0" y2="60" stroke="#ef4444" stroke-width="3" marker-end="url(#ah)" id="earth-arrow"/><text x="10" y="50" fill="#ef4444" font-size="12" font-weight="bold" id="earth-force-text">14700 N</text></g>
                             <defs><marker id="ah" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#ef4444"/></marker></defs>
@@ -251,7 +251,7 @@
                 <div class="flex-1 bg-white border-2 border-slate-200 rounded-xl overflow-hidden flex flex-col">
                     <div class="bg-orange-50 p-3 border-b border-orange-100 flex justify-between items-center"><span class="font-bold text-slate-700"><i class="fas fa-globe text-orange-500 mr-2"></i>Mars <span class="zh-text">火星</span></span><span class="text-xs text-slate-400">g = 3.7 N/kg</span></div>
                     <div class="flex-1 bg-orange-50/30 flex flex-col items-center justify-center p-4">
-                        <svg id="mars-bridge-svg" viewBox="0 0 300 200" class="w-full max-w-[300px] h-auto">
+                        <svg id="mars-bridge-svg" viewBox="0 0 300 270" class="w-full max-w-[300px] h-auto">
                             <g id="mars-bridge-g"><rect x="20" y="150" width="20" height="50" fill="#64748b"/><rect x="260" y="150" width="20" height="50" fill="#64748b"/><line x1="10" y1="150" x2="290" y2="150" class="bridge-deck"/><path d="M30,150 L80,120 L130,150 L180,120 L230,150 L280,120" fill="none" class="bridge-truss"/></g>
                             <g id="mars-truck" transform="translate(130,135)"><rect x="-20" y="0" width="40" height="15" fill="#ef4444" rx="2"/><rect x="20" y="5" width="10" height="10" fill="#3b82f6" rx="1"/><circle cx="-10" cy="15" r="4" fill="#333"/><circle cx="15" cy="15" r="4" fill="#333"/><line x1="0" y1="20" x2="0" y2="60" stroke="#ef4444" stroke-width="3" marker-end="url(#ah)" id="mars-arrow"/><text x="10" y="50" fill="#ef4444" font-size="12" font-weight="bold" id="mars-force-text">5550 N</text></g>
                         </svg>
@@ -454,15 +454,16 @@
             const maxLoad=20000, ew=m*9.8, mw=m*3.7;
             document.getElementById('earth-force-text').textContent=Math.round(ew)+" N";
             document.getElementById('mars-force-text').textContent=Math.round(mw)+" N";
-            const upd=(weight,arrowId,statusId,bridgeId)=>{
+            const upd=(weight,arrowId,statusId,bridgeId,textId)=>{
                 const safe=weight<=maxLoad, al=Math.min((weight/25000)*80,100);
                 document.getElementById(arrowId).setAttribute("y2",20+al);
+                document.getElementById(textId).setAttribute("y",Math.min(20+al-5,110));
                 const se=document.getElementById(statusId), be=document.getElementById(bridgeId);
                 if(safe){se.textContent="SAFE";se.className="status-badge mt-4 px-4 py-2 rounded-full font-bold text-white bg-green-500 text-sm shadow-md";be.querySelector('.bridge-deck').setAttribute("stroke","#475569");be.querySelector('.bridge-truss').setAttribute("stroke","#64748b");}
                 else{se.textContent="FAILURE";se.className="status-badge mt-4 px-4 py-2 rounded-full font-bold text-white bg-red-600 text-sm shadow-md animate-pulse";be.querySelector('.bridge-deck').setAttribute("stroke","#ef4444");be.querySelector('.bridge-truss').setAttribute("stroke","#f87171");}
             };
-            upd(ew,'earth-arrow','earth-status','earth-bridge-g');
-            upd(mw,'mars-arrow','mars-status','mars-bridge-g');
+            upd(ew,'earth-arrow','earth-status','earth-bridge-g','earth-force-text');
+            upd(mw,'mars-arrow','mars-status','mars-bridge-g','mars-force-text');
         }
 
         function checkAnswer() {
